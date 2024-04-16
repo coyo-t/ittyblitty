@@ -119,7 +119,7 @@ public class PicMap
 
 	public int getPixelARGB (int x, int y)
 	{
-		return getPixelARGB(xytoi(x, y) << 2);
+		return getPixelARGB(xytoi(x, y));
 	}
 
 	int xytoi (int x, int y)
