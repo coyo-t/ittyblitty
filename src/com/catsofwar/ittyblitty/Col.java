@@ -107,8 +107,8 @@ public class Col
 		}
 	
 		final float r, g, b;
-		float hsect = (int)(h - floor((h)) * 6);
-		float hfrac = (int)(hsect - floor(hsect));
+		float hsect = (float)((h - floor(h)) * 6);
+		float hfrac = (float)(hsect - floor(hsect));
 		float q1 = v * (1 - s);
 		float q2 = v * (1 - s * hfrac);
 		float q3 = v * (1 - (s * (1 - hfrac)));

@@ -34,15 +34,16 @@ public class Drawer
 		return surface.getTall();
 	}
 
-	public void clear (int clearColour)
+	public Drawer clear (int clearColour)
 	{
 		for (int i = surface.getCount(); (--i) >= 0;)
 		{
 			surface.setPixelARGB(i, clearColour);
 		}
+		return this;
 	}
 
-	public void line (float x0, float y0, float x1, float y1, int colour)
+	public Drawer line (float x0, float y0, float x1, float y1, int colour)
 	{
 		final int steps;
 		float xstep = x1 - x0;
@@ -84,24 +85,89 @@ public class Drawer
 			x0 += xstep;
 			y0 += ystep;
 		}
+		return this;
 	}
 
-	public void rectangle_wire (int x, int y, int wide, int tall, int colour)
+	public Drawer hline (int x0, int x1, int y, int colour)
 	{
-		final var x1 = x+wide;
-		final var y1 = y+tall;
-		line(x,  y,  x1, y,  colour);
-		line(x,  y1, x1, y1, colour);
-		line(x,  y,  x,  y1, colour);
-		line(x1, y,  x1, y1, colour);
+		if (!pointInVertical(y))
+			return this;
+		
+		if (x1 < x0)
+		{
+			final var temp = x0;
+			x0 = x1;
+			x1 = temp;
+		}
+		
+		x0 = max(x0, 0);
+		x1 = min(x1, getWide());
+		
+		final var lwide = x1 - x0;
+		
+		if (lwide <= 0)
+			return this;
+		
+		var i = surface.xytoi(x0, y);
+		final var end = surface.xytoi(x1, y);
+		
+		for (; i <= end; i++)
+		{
+			surface.setPixelARGB(i, colour);
+		}
+		
+		return this;
 	}
 
-	public void rectangle_wire_centred (int x, int y, int wide, int tall, int colour)
+	public Drawer vline (int x, int y0, int y1, int colour)
 	{
-		rectangle_wire(x - (wide>>1), y - (tall>>1), wide, tall, colour);
+		if (!pointInHorizontal(x))
+			return this;
+		
+		if (y1 < y0)
+		{
+			final var temp = y0;
+			y0 = y1;
+			y1 = temp;
+		}
+		
+		y0 = max(y0, 0);
+		y1 = min(y1, getTall());
+		
+		final var ltall = y1 - y0;
+		
+		if (ltall <= 0)
+			return this;
+		
+		var i = surface.xytoi(x, y0);
+		final var end = surface.xytoi(x, y1);
+		final var stride = getWide();
+		for (; i <= end; i += stride)
+		{
+			surface.setPixelARGB(i, colour);
+		}
+		
+		return this;
 	}
 
-	public void rectangle (float x, float y, float wide, float tall, int colour)
+	public Drawer rectangle_wire (int x, int y, int wide, int tall, int colour)
+	{
+		final var x1 = x+wide-1;
+		final var y1 = y+tall-1;
+		
+		hline(x, x1, y,  colour);
+		hline(x, x1, y1, colour);
+		vline(x, y+1, y1-1, colour);
+		vline(x1, y+1, y1-1, colour);
+		return this;
+	}
+
+	public Drawer rectangle_wire_centred (int x, int y, int wide, int tall, int colour)
+	{
+		return rectangle_wire(x - (wide>>1), y - (tall>>1), wide, tall, colour);
+	}
+
+	public Drawer rectangle (float x, float y, float wide, float tall, int colour)
 	{
 		int dx = max((int)x, 0);
 		int dy = max((int)y, 0);
@@ -123,14 +189,15 @@ public class Drawer
 				);
 			}
 		}
+		return this;
 	}
 
-	public void rectangle_centred (float x, float y, float wide, float tall, int colour)
+	public Drawer rectangle_centred (float x, float y, float wide, float tall, int colour)
 	{
-		rectangle(x - wide / 2, y - tall / 2, wide, tall, colour);
+		return rectangle(x - wide / 2, y - tall / 2, wide, tall, colour);
 	}
 
-	public void sprite_part (
+	public Drawer sprite_part (
 		PicMap sprite,
 		int x,
 		int y,
@@ -159,9 +226,10 @@ public class Drawer
 				}
 			}
 		}
+		return this;
 	}
 
-	public void sprite_part (
+	public Drawer sprite_part (
 		PicMap sprite,
 		int x,
 		int y,
@@ -264,9 +332,10 @@ public class Drawer
 				}
 			}
 		}
+		return this;
 	}
 
-	public void fill_replace (int x, int y, int wide, int tall, int cReplace, int cWith)
+	public Drawer fill_replace (int x, int y, int wide, int tall, int cReplace, int cWith)
 	{
 		var dx = max(x, 0);
 		var dy = max(y, 0);
@@ -286,10 +355,10 @@ public class Drawer
 			}
 			addr += ystride;
 		}
+		return this;
 	}
-
 	
-	public void sprite_replace_colour (
+	public Drawer sprite_replace_colour (
 		PicMap sprite,
 		int x,
 		int y,
@@ -326,6 +395,22 @@ public class Drawer
 				}
 			}
 		}
+		return this;
+	}
+
+	public boolean pointInHorizontal (int x)
+	{
+		return 0 <= x && x < getWide();
+	}
+	
+	public boolean pointInVertical (int y)
+	{
+		return 0 <= y && y < getTall();
+	}
+
+	public boolean pointIn (int x, int y)
+	{
+		return pointInHorizontal(x) && pointInVertical(y);
 	}
 
 }
