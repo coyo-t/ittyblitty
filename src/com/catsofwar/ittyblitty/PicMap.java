@@ -83,9 +83,9 @@ public class PicMap
 		return data;
 	}
 	
-	public PicMap setPixel (int x, int y, int r, int g, int b, int a)
+	public PicMap setPixel (int i, int r, int g, int b, int a)
 	{
-		final var i = xytoi(x, y) << 2;
+		i = i << 2;
 		data
 		.put(i,   (byte)r)
 		.put(i+1, (byte)g)
@@ -93,27 +93,36 @@ public class PicMap
 		.put(i+3, (byte)a);
 		return this;
 	}
+	
+	public PicMap setPixel (int x, int y, int r, int g, int b, int a)
+	{
+		return setPixel(xytoi(x, y), r, g, b, a);
+	}
 
-	public PicMap setPixelARGB (int x, int y, int c)
+	public PicMap setPixelARGB (int i, int c)
 	{
 		return setPixel(
-			x,
-			y,
-			(c>>16)&0xFF,
-			(c>>8)&0xFF,
-			c&0xFF,
-			(c>>>24)&0xFF
+			i,
+			Col.get_r(c),
+			Col.get_g(c),
+			Col.get_b(c),
+			Col.get_a(c)
 		);
+	}
+	
+	public PicMap setPixelARGB (int x, int y, int c)
+	{
+		return setPixelARGB(xytoi(x, y), c);
 	}
 
 	public int getPixelARGB (int i)
 	{
 		i = i << 2;
-		return (
-			((data.get(i)&0xFF)<<16)|
-			((data.get(i+1)&0xFF)<<8)|
-			(data.get(i+2)&0xFF)|
-			((data.get(i+3)&0xFF)<<24)
+		return Col.make_rgba(
+			data.get(i),
+			data.get(i+1),
+			data.get(i+2),
+			data.get(i+3)
 		);
 	}
 
@@ -144,6 +153,16 @@ public class PicMap
 		final var outs = new PicMap(subW, subH);
 		Util.mvpx(this, subX, subY, subW, subH, outs, 0, 0);
 		return outs;
+	}
+
+	public boolean pointfIn (float x, float y)
+	{
+		return 0 <= x && x < wide && 0 <= y && y < tall;
+	}
+
+	public boolean pointIn (int x, int y)
+	{
+		return 0 <= x && x < wide && 0 <= y && y < tall;
 	}
 
 }
