@@ -198,16 +198,21 @@ public class Col
 		return min(blend1_mul2(b, a, fac) + a, 0xFF);
 	}
 	
+	public static int blend_mix (int a, int b, int fac)
+	{
+		return make_rgb(
+			blend1_mix(get_r(a), get_r(b), fac),
+			blend1_mix(get_g(a), get_g(b), fac),
+			blend1_mix(get_b(a), get_b(b), fac)
+		);
+	}
+	
 	public static int blend (int blendMode, int src, int dst, int fac)
 	{
 		return switch (blendMode)
 		{
 			// mix
-			case 1 -> make_rgb(
-				blend1_mix(get_r(src), get_r(dst), fac),
-				blend1_mix(get_g(src), get_g(dst), fac),
-				blend1_mix(get_b(src), get_b(dst), fac)
-			);
+			case 1 -> blend_mix(src, dst, fac);
 			
 			// add
 			case 2 -> make_rgb(

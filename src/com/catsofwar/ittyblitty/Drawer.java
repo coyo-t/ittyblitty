@@ -17,22 +17,20 @@ public class Drawer
 	public int blend_mode = 0;
 	public int bM = 0;
 	
+	int blend_col = 0xFF_FFFFFF;
+	
 	PicMap surface;
+
+	public Drawer (int wide, int tall)
+	{
+		this(new PicMap(wide, tall));
+	}
 
 	public Drawer (PicMap surface)
 	{
 		this.surface = surface;
 	}
 
-	public int getWide ()
-	{
-		return surface.getWide();
-	}
-
-	public int getTall ()
-	{
-		return surface.getTall();
-	}
 
 	public Drawer clear (int clearColour)
 	{
@@ -40,6 +38,131 @@ public class Drawer
 		{
 			surface.setPixelARGB(i, clearColour);
 		}
+		return this;
+	}
+
+	public Drawer paste (PicMap sprite, int x, int y)
+	{
+		final var wide = getWide();
+		final var tall = getTall();
+	
+		final var swide = sprite.getWide();
+		final var stall = sprite.getTall();
+	
+		if (x >= wide || y >= tall || x <= -swide || y <= -stall)
+			return this;
+		
+		var subx = 0;
+		var suby = 0;
+		var subw = swide;
+		var subh = stall;
+		
+		if (x < 0)
+		{
+			subx -= x;
+			subw += x;
+			x = 0;
+		}
+		
+		if (y < 0)
+		{
+			suby -= y;
+			subh += y;
+			y = 0;
+		}
+		
+		if (x+swide > wide)
+		{
+			subw += wide-(x+swide);
+		}
+		
+		if (y+stall > tall)
+		{
+			subh += tall-(y+stall);
+		}
+		
+		Util.mvpx(sprite, subx, suby, subw, subh, surface, x, y);
+		
+		return this;
+	}
+
+	public Drawer mix (PicMap sprite, int x, int y)
+	{
+		final var blenda = Col.get_a(blend_col);
+		if (blenda <= 0)
+		{
+			return this;
+		}
+	
+		final var wide = getWide();
+		final var tall = getTall();
+	
+		final var swide = sprite.getWide();
+		final var stall = sprite.getTall();
+	
+		if (x >= wide || y >= tall || x <= -swide || y <= -stall)
+			return this;
+		
+		var subx = 0;
+		var suby = 0;
+		var subw = swide;
+		var subh = stall;
+		
+		if (x < 0)
+		{
+			subx -= x;
+			subw += x;
+			x = 0;
+		}
+		
+		if (y < 0)
+		{
+			suby -= y;
+			subh += y;
+			y = 0;
+		}
+		
+		if (x+swide > wide)
+		{
+			subw += wide-(x+swide);
+		}
+		
+		if (y+stall > tall)
+		{
+			subh += tall-(y+stall);
+		}
+		
+		
+		var si = sprite.xytoi(subx, suby);
+		var di = surface.xytoi(x, y);
+		
+		final var sstride = swide-subw;
+		final var dstride = wide-subw;
+		
+		final var end = surface.xytoi(x+subw-1, y+subh-1);
+		var limit = di+subw;
+		
+		// FIXME TODO: doesnt handle alpha from pixels right
+		// or tint colour.
+		while (di <= end)
+		{
+			final var srcPix = sprite.getPixelARGB(si);
+			final var dstPix = surface.getPixelARGB(di);
+			
+			surface.setPixelARGB(
+				di,
+				Col.blend_mix(dstPix, srcPix, Col.get_a(blend_col))
+			);
+			
+			++si;
+			if ((++di) >= limit)
+			{
+				di += dstride;
+				si += sstride;
+				limit += wide;
+			}
+		}
+		
 		return this;
 	}
 
@@ -71,7 +194,7 @@ public class Drawer
 		
 		for (int i = 0; i <= steps; i++)
 		{
-			if (surface.pointfIn(x0, y0))
+			if (pointfIn(x0, y0))
 			{
 				int addr = surface.xytoi((int)x0, (int)y0);
 				surface.setPixelARGB(
@@ -88,6 +211,13 @@ public class Drawer
 		return this;
 	}
 
+	/**
+	 * Excludes x1 (essentially x1 is the right edge of the last pixel)
+	 *
+	 * x0      x1
+	 * |       |
+	 * ########|
+	 */
 	public Drawer hline (int x0, int x1, int y, int colour)
 	{
 		if (!pointInVertical(y))
@@ -119,6 +249,15 @@ public class Drawer
 		return this;
 	}
 
+	/**
+	 * Excludes y1 (essentially y1 is the bottom edge of the last pixel)
+	 *
+	 * #- y0
+	 * #
+	 * #
+	 * #
+	 * -- y1
+	 */
 	public Drawer vline (int x, int y0, int y1, int colour)
 	{
 		if (!pointInHorizontal(x))
@@ -398,6 +537,43 @@ public class Drawer
 		return this;
 	}
 
+
+	public int getBlendARGB ()
+	{
+		return blend_col;
+	}
+
+	public Drawer setBlendARGB (int c)
+	{
+		blend_col = c;
+		return this;
+	}
+
+	public Drawer setBlendRGB (int c)
+	{
+		return setBlendARGB(Col.with_alpha(c, 0xFF));
+	}
+	
+	public Drawer changeBlendAlpha (int a)
+	{
+		return setBlendARGB(Col.with_alpha(blend_col, max(0, min(a, 0xFF))));
+	}
+
+	public PicMap getSurface ()
+	{
+		return surface;
+	}
+
+	public int getWide ()
+	{
+		return surface.getWide();
+	}
+
+	public int getTall ()
+	{
+		return surface.getTall();
+	}
+
 	public boolean pointInHorizontal (int x)
 	{
 		return 0 <= x && x < getWide();
@@ -406,6 +582,11 @@ public class Drawer
 	public boolean pointInVertical (int y)
 	{
 		return 0 <= y && y < getTall();
+	}
+
+	public boolean pointfIn (float x, float y)
+	{
+		return 0 <= x && x < getWide() && 0 <= y && y < getTall();
 	}
 
 	public boolean pointIn (int x, int y)
